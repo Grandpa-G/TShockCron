@@ -154,12 +154,14 @@ namespace TShockCron
                               where tmpTimer.Value.Equals(source)
                               select tmpTimer).FirstOrDefault();
             if (firedtimer.Key == null)
-                if (Cron.verbose) 
+            {
+                if (Cron.verbose)
                     Console.WriteLine("The Elapsed event was raised at {0}:{1}\n{2}", e.SignalTime, firedtimer.Key, "null");
+            }
             else
             {
-                if(Cron.verbose)
-                Console.WriteLine("The Elapsed event was raised at {0}:{1}\n{2}", e.SignalTime, firedtimer.Key, commandLines[firedtimer.Key].Command);
+                if (Cron.verbose)
+                    Console.WriteLine("The Elapsed event was raised at {0}:{1}\n{2}", e.SignalTime, firedtimer.Key, commandLines[firedtimer.Key].Command);
                 string command = commandLines[firedtimer.Key].Command;
                 Console.Write("[TCron]->");
                 Commands.HandleCommand(TSPlayer.Server, (command.StartsWith("/") ? command : "/" + command));
