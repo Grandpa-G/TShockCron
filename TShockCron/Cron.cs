@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Threading;
 using System.IO;
 using System.Data;
 using System.ComponentModel;
 using System.Reflection;
 using System.Drawing;
+using System.Windows.Forms;
+using System.Security.Permissions;
 
 using Terraria;
 using TShockAPI;
 using Newtonsoft.Json;
-using System.Threading;
 using TerrariaApi.Server;
 using Newtonsoft.Json.Linq;
 
@@ -25,6 +26,8 @@ namespace TShockCron
         public static bool verbose = false;
         public static bool preview = false;
         private CronTab cronTab = new CronTab();
+        Thread thread;
+        ViewCronTab cronTabForm;
 
         public override string Name
         {
@@ -66,6 +69,7 @@ namespace TShockCron
             base.Dispose(disposing);
         }
 
+ 
         private void runTCron(CommandArgs args)
         {
             if (args.Player.RealPlayer)
@@ -80,6 +84,7 @@ namespace TShockCron
             {
                 args.Player.SendMessage("Syntax: /cron [-help] ", Color.Red);
                 args.Player.SendMessage("Flags: ", Color.LightSalmon);
+                args.Player.SendMessage(" -edit/-e      invokes the GUI CronTab file editor", Color.LightSalmon);
                 args.Player.SendMessage(" -stop/-s      stops all future cron events", Color.LightSalmon);
                 args.Player.SendMessage(" -reload/-r    reloads options from crontab file", Color.LightSalmon);
                 args.Player.SendMessage(" -verbose/-v   show details", Color.LightSalmon);
@@ -98,6 +103,13 @@ namespace TShockCron
                 var path = Path.Combine(TShock.SavePath, "crontab.txt");
 
                 cronTab.Read(path);
+                return;
+            }
+
+            if (arguments.Contains("-e") || arguments.Contains("-edit"))
+            {
+                var path = Path.Combine(TShock.SavePath, "crontab.txt");
+                CronGUI(path);
                 return;
             }
 
@@ -141,7 +153,29 @@ namespace TShockCron
 
             Console.WriteLine(" Invalid cron option:" + string.Join(" ", args.Parameters));
         }
-    }
+         private void CronGUI(string path)
+        {
+            AppDomain currentDomain = AppDomain.CurrentDomain;
+            currentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
+
+            thread = new Thread(new ThreadStart(() =>
+            {
+                // this code is going to be executed in a separate thread
+                cronTabForm = new ViewCronTab(path);
+
+                Application.Run(cronTabForm);
+
+            }));
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+        }
+           static void MyHandler(object sender, UnhandledExceptionEventArgs args)
+           {
+               Exception e = (Exception)args.ExceptionObject;
+               Console.WriteLine("MyHandler caught : " + e.Message);
+               Console.WriteLine("Runtime terminating: {0}", args.IsTerminating);
+           }
+    }  
     #region application specific commands
     public class CronListArguments : InputArguments
     {
