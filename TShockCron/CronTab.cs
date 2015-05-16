@@ -189,7 +189,7 @@ namespace TShockCron
                 catch
                 {
                 }
-                Console.Write("[TCron]->");
+                Console.Write("[TCron@reboot]->");
                 Commands.HandleCommand(TSPlayer.Server, (command.StartsWith("/") ? command : "/" + command));
             }
             file.Close();

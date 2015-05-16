@@ -58,6 +58,9 @@ namespace TShockCron
          }
         protected override void Dispose(bool disposing)
         {
+            if (cronTabForm != null)
+                cronTabForm.Close();
+
             if (disposing)
             {
                 ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGameInitialize);

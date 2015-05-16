@@ -31,7 +31,7 @@ namespace TShockCron
             bool comment = false;
             string[] lineOptions;
             string command;
-            string options;
+            string options = "";
 
             lblSaveStatus.Text = "";
 
@@ -60,23 +60,32 @@ namespace TShockCron
                     options = line;
                     command = "";
                 }
-                else
+                else if (line.ToLower().StartsWith("@reboot"))
                 {
-                    options = "";
                     command = "";
                     try
                     {
-                        lineOptions = line.Split(default(Char[]), 6, StringSplitOptions.RemoveEmptyEntries);
-                        for (int i = 0; i < lineOptions.Length - 1; i++)
-                            options += lineOptions[i] + " ";
+                        lineOptions = line.Split(default(Char[]), 2, StringSplitOptions.RemoveEmptyEntries);
                         command = lineOptions[lineOptions.Length - 1];
+                        options = lineOptions[0];
                     }
-                    catch
-                    {
-                    }
-                    
+                    catch { }
                 }
-
+                else
+                {
+                    {
+                        options = "";
+                        command = "";
+                        try
+                        {
+                            lineOptions = line.Split(default(Char[]), 6, StringSplitOptions.RemoveEmptyEntries);
+                            for (int i = 0; i < lineOptions.Length - 1; i++)
+                                options += lineOptions[i] + " ";
+                            command = lineOptions[lineOptions.Length - 1];
+                        }
+                        catch { }
+                    }
+                }
                 try
                 {
                     dataCronTab.Rows.Add(options, command);
