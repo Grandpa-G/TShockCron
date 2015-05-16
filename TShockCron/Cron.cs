@@ -52,24 +52,24 @@ namespace TShockCron
         }
         public override void Initialize()
         {
-            if (TShock.Config.UseSqlLogs)
-            {
-                Console.WriteLine("This command only used with text log files.");
-                return;
-            }
-
+            ServerApi.Hooks.GamePostInitialize.Register(this, OnGameInitialize);
+ 
             Commands.ChatCommands.Add(new Command("TCron.allow", runTCron, "cron"));
-
-        }
+         }
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-            }
+                ServerApi.Hooks.GamePostInitialize.Deregister(this, OnGameInitialize);
+             }
             base.Dispose(disposing);
         }
 
- 
+        private void OnGameInitialize(EventArgs args)
+        {
+            cronTab.atReboot(Path.Combine(TShock.SavePath, "crontab.txt"));
+        }
+
         private void runTCron(CommandArgs args)
         {
             if (args.Player.RealPlayer)
@@ -85,6 +85,7 @@ namespace TShockCron
                 args.Player.SendMessage("Syntax: /cron [-help] ", Color.Red);
                 args.Player.SendMessage("Flags: ", Color.LightSalmon);
                 args.Player.SendMessage(" -edit/-e      invokes the GUI CronTab file editor", Color.LightSalmon);
+                args.Player.SendMessage(" -delete/-d <n>deletes the nth scheduled event, use -list for <n>", Color.LightSalmon);
                 args.Player.SendMessage(" -stop/-s      stops all future cron events", Color.LightSalmon);
                 args.Player.SendMessage(" -reload/-r    reloads options from crontab file", Color.LightSalmon);
                 args.Player.SendMessage(" -verbose/-v   show details", Color.LightSalmon);
@@ -110,6 +111,27 @@ namespace TShockCron
             {
                 var path = Path.Combine(TShock.SavePath, "crontab.txt");
                 CronGUI(path);
+                return;
+            }
+
+            if (arguments.Contains("-d") || arguments.Contains("-delete"))
+            {
+                int deleteIndex;
+                string arg = "";
+                if (arguments.Contains("-d"))
+                    arg = arguments["-d"];
+                if (arguments.Contains("-delete"))
+                    arg = arguments["-d"];
+                if (arg.Length == 0)
+                    Console.WriteLine(" Invalid -delete value.");
+
+                if (Int32.TryParse(arg, out deleteIndex))
+                {
+                    cronTab.deleteSchedule(deleteIndex);
+                }
+                else
+                    Console.WriteLine(" Invalid -delete value, not a number.");
+
                 return;
             }
 
@@ -153,7 +175,7 @@ namespace TShockCron
 
             Console.WriteLine(" Invalid cron option:" + string.Join(" ", args.Parameters));
         }
-         private void CronGUI(string path)
+        private void CronGUI(string path)
         {
             AppDomain currentDomain = AppDomain.CurrentDomain;
             currentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
@@ -169,13 +191,13 @@ namespace TShockCron
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
         }
-           static void MyHandler(object sender, UnhandledExceptionEventArgs args)
-           {
-               Exception e = (Exception)args.ExceptionObject;
-               Console.WriteLine("MyHandler caught : " + e.Message);
-               Console.WriteLine("Runtime terminating: {0}", args.IsTerminating);
-           }
-    }  
+        static void MyHandler(object sender, UnhandledExceptionEventArgs args)
+        {
+            Exception e = (Exception)args.ExceptionObject;
+            Console.WriteLine("MyHandler caught : " + e.Message);
+            Console.WriteLine("Runtime terminating: {0}", args.IsTerminating);
+        }
+    }
     #region application specific commands
     public class CronListArguments : InputArguments
     {

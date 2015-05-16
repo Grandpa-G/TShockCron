@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
 using System.IO;
 using NCrontab;
 using System.Timers;
@@ -32,7 +31,7 @@ namespace TShockCron
             RunOnce = false;
         }
 
- 
+
         public static Dictionary<string, System.Timers.Timer> currentAlertsTimers = new Dictionary<string, System.Timers.Timer>();
         public static Dictionary<string, CronTab> commandLines = new Dictionary<string, CronTab>();
 
@@ -43,7 +42,42 @@ namespace TShockCron
             var path = Path.Combine(TShock.SavePath, "crontab.txt");
 
             Read(path);
-                    } 
+        }
+
+        public void deleteSchedule(int eventId)
+        {
+            Timer t;
+            try
+            {
+                t = currentAlertsTimers[eventId.ToString()];
+            }
+            catch
+            {
+                Console.WriteLine(" " + eventId.ToString() + " not found to delete.");
+                return;
+            }
+            t.Stop();
+            t.Dispose();
+            currentAlertsTimers.Remove(eventId.ToString());
+
+            DateTime startDate = DateTime.Now;
+            DateTime endDate = DateTime.Now.AddYears(1);
+            DateTime futureEvent;
+            IEnumerable<DateTime> occurrence;
+            string command = commandLines[eventId.ToString()].Command;
+            string options = commandLines[eventId.ToString()].IntervalOptions;
+
+            try
+            {
+                var schedule = CrontabSchedule.Parse(options);
+
+                occurrence = schedule.GetNextOccurrences(startDate, endDate);
+                futureEvent = occurrence.FirstOrDefault();
+                Console.WriteLine(" Deleted " + eventId + ":" + options + " " + command + " on " + futureEvent.ToString("g"));
+            }
+            catch { }
+            commandLines.Remove(eventId.ToString());
+        }
 
         public bool Read(string path)
         {
@@ -57,7 +91,7 @@ namespace TShockCron
                     fileWriter.WriteLine("");
                 }
             }
-           
+
             string line;
             string[] lineOptions;
             string command;
@@ -74,9 +108,12 @@ namespace TShockCron
             System.IO.StreamReader file = new System.IO.StreamReader(path);
             while ((line = file.ReadLine()) != null)
             {
+                line = line.Trim();
                 if (line.Length == 0)
                     continue;
                 if (line.StartsWith("#"))
+                    continue;
+                if (line.ToLower().StartsWith("@reboot"))
                     continue;
                 options = "";
                 command = "";
@@ -98,9 +135,9 @@ namespace TShockCron
                     occurrence = schedule.GetNextOccurrences(startDate, endDate);
                     futureEvent = occurrence.FirstOrDefault();
                     interval = (futureEvent - startDate).TotalMilliseconds;
-                     entryId++;
-                     currentKey = entryId.ToString();
-                     Console.WriteLine(" " + currentKey + ":" + options + " " + command + " on " + futureEvent.ToString("g"));
+                    entryId++;
+                    currentKey = entryId.ToString();
+                    Console.WriteLine(" " + currentKey + ":" + options + " " + command + " on " + futureEvent.ToString("g"));
 
                     if (!Cron.preview)
                     {
@@ -114,7 +151,6 @@ namespace TShockCron
 
                         CronTab ct = new CronTab(options, command, false);
                         commandLines.Add(currentKey, ct);
-
                     }
                 }
                 catch
@@ -124,6 +160,40 @@ namespace TShockCron
             }
             file.Close();
             return true;
+        }
+        public void atReboot(string path)
+        {
+            if (!File.Exists(path))
+                return;
+
+            string line;
+            string[] lineOptions;
+            string command;
+
+            // Read the file and display it line by line.
+            System.IO.StreamReader file = new System.IO.StreamReader(path);
+            while ((line = file.ReadLine()) != null)
+            {
+                if (line.Length == 0)
+                    continue;
+
+                if (!line.ToLower().StartsWith("@reboot"))
+                    continue;
+
+                command = "";
+                try
+                {
+                    lineOptions = line.Split(default(Char[]), 2, StringSplitOptions.RemoveEmptyEntries);
+                    command = lineOptions[lineOptions.Length - 1];
+                }
+                catch
+                {
+                }
+                Console.Write("[TCron]->");
+                Commands.HandleCommand(TSPlayer.Server, (command.StartsWith("/") ? command : "/" + command));
+            }
+            file.Close();
+            return;
         }
         public void listTimeEvents()
         {
@@ -143,7 +213,7 @@ namespace TShockCron
                     var schedule = CrontabSchedule.Parse(cl.Value.IntervalOptions);
 
                     occurrence = schedule.GetNextOccurrences(startDate, endDate);
-                     futureEvent = occurrence.FirstOrDefault();
+                    futureEvent = occurrence.FirstOrDefault();
                     Console.WriteLine(" " + cl.Key + ":" + cl.Value.IntervalOptions + " " + cl.Value.Command + " on " + futureEvent.ToString("g"));
                 }
                 catch { }
@@ -193,24 +263,24 @@ namespace TShockCron
                 DateTime endDate = DateTime.Now.AddYears(1);
                 DateTime futureEvent;
                 double interval;
-                IEnumerable<DateTime> occurrence; 
-                
+                IEnumerable<DateTime> occurrence;
+
                 Console.Write("[TCron]->");
                 Commands.HandleCommand(TSPlayer.Server, (command.StartsWith("/") ? command : "/" + command));
                 var schedule = CrontabSchedule.Parse(options);
                 startDate = DateTime.Now;
                 occurrence = schedule.GetNextOccurrences(startDate, endDate);
-/*
-                {
-                    int count = 0;
-                    foreach (var o in schedule.GetNextOccurrences(startDate, endDate))
-                    {
-                        if (count++ > 3)
-                            break;
-                        Console.WriteLine(">" + o);
-                    }
-                }
-                 */
+                /*
+                                {
+                                    int count = 0;
+                                    foreach (var o in schedule.GetNextOccurrences(startDate, endDate))
+                                    {
+                                        if (count++ > 3)
+                                            break;
+                                        Console.WriteLine(">" + o);
+                                    }
+                                }
+                                 */
                 futureEvent = occurrence.FirstOrDefault();
                 interval = (futureEvent - startDate).TotalMilliseconds;
                 firedtimer.Value.Interval = interval;

@@ -102,6 +102,7 @@ namespace TShockCron
 
             // Copy the file.
             File.Copy(cronTabPath, backupPath);
+
             using (System.IO.StreamWriter fileWriter = new System.IO.StreamWriter(cronTabPath))
             {
                 foreach (DataGridViewRow row in dataCronTab.Rows)
@@ -109,13 +110,16 @@ namespace TShockCron
                     if (row != null)
                         if (row.Cells != null)
                         {
-                            options = "";
-                            if (row.Cells[0].Value != null)
-                                options = row.Cells[0].Value.ToString();
-                            command = "";
-                            if (row.Cells[1].Value != null)
-                                command = row.Cells[1].Value.ToString();
-                            fileWriter.WriteLine(options + "" + command);
+                            if (row.Index < dataCronTab.Rows.Count - 1)
+                            {
+                                options = "";
+                                if (row.Cells[0].Value != null)
+                                    options = row.Cells[0].Value.ToString().Trim();
+                                command = "";
+                                if (row.Cells[1].Value != null)
+                                    command = row.Cells[1].Value.ToString().Trim();
+                                fileWriter.WriteLine(options + " " + command);
+                            }
                         }
                 }
             }

@@ -1,4 +1,5 @@
 ﻿/* Thanks to michael.freidgeim */
+/* http://dotnetfollower.com/wordpress/2012/03/c-simple-command-line-arguments-parser/ */
 
 using System;
 using System.Collections.Generic;
