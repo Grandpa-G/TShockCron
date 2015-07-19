@@ -14,13 +14,12 @@ using System.Security.Permissions;
 
 using Terraria;
 using TShockAPI;
-using Newtonsoft.Json;
 using TerrariaApi.Server;
-using Newtonsoft.Json.Linq;
+
 
 namespace TShockCron
 {
-    [ApiVersion(1, 17)]
+    [ApiVersion(1, 19)]
     public class Cron : TerrariaPlugin
     {
         public static bool verbose = false;
