@@ -19,7 +19,7 @@ using TerrariaApi.Server;
 
 namespace TShockCron
 {
-    [ApiVersion(1, 19)]
+    [ApiVersion(1, 21)]
     public class Cron : TerrariaPlugin
     {
         public static bool verbose = false;
